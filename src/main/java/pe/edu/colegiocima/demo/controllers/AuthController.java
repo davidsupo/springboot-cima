@@ -55,11 +55,13 @@ public class AuthController {
 
     @PostMapping("/refrescar")
     public ResponseEntity<?> refrescarToken(@RequestBody JwtRefreshToken jwtRefresToken){
+        Map<String,Object> respuesta = new HashMap<>();
         try {
             String token = jwtTokenUtil.regenerateToken(jwtRefresToken.getJwtToken());
             return ResponseEntity.ok(new JwtResponse(token));
         }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            respuesta.put("mensaje",e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(respuesta);
         }
     }
 }
