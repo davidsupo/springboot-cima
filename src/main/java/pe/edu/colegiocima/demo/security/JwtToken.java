@@ -1,9 +1,13 @@
 package pe.edu.colegiocima.demo.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -14,11 +18,13 @@ import java.util.function.Function;
 @Component
 public class JwtToken {
     // Constante de tiempo de validación del TOKEN
-    public static final long JWT_TOKEN_VALIDITY = 5*60*60;
+    public static final long JWT_TOKEN_VALIDITY = 60;
 
     // Constante Clave secreta para generar el token
     public static final String JWT_SECRET = "cima_app_secret";
 
+    @Autowired
+    private UserDetailsService userDetailsService;
     // Generar el token
     public String generateToken(UserDetails userDetails){
         Map<String,Object> claims = new HashMap<>();
@@ -58,6 +64,36 @@ public class JwtToken {
         final Date expiration = getExpirationDateFromToken(token);
         return expiration.before(new Date());
     }
+
+    public String regenerateToken(String token) throws Exception{
+        try{
+            final Date expiration = getExpirationDateFromToken(token);
+            throw new Exception("El token todavía es válido");
+        }catch (ExpiredJwtException e){
+            String usuario = e.getClaims().getSubject();
+            int tiempo = (int)((new Date().getTime() - e.getClaims().getExpiration().getTime())/(60*60*1000));
+            UserDetails userDetails = userDetailsService.loadUserByUsername(usuario);
+            System.out.println(e.getClaims());
+            System.out.println(tiempo);
+            if(tiempo<12){
+                return generateToken(userDetails);
+            }else{
+                throw  new Exception("TIEMPO DE DESCONEXIÓN MAYOR A 12 HORAS");
+            }
+        }
+    }
+
+
+
+    //public String regenerateToken(String token){
+      //  isTokenExpiredLastCoupleDays(token);
+        //String username = getUsernameFromToken(token);
+        //return "Hello World";
+        //UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        //return generateToken(userDetails);
+    //}
+
+
 
     // Validar token
     public Boolean validateToken(String token, UserDetails userDetails){
